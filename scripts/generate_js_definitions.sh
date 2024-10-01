@@ -41,6 +41,7 @@ else
     npm install # in case things have changed
     npm run fetch:local
     npm run build
+    npm run build:types-json
 fi
 
 # Generate the new packed tgz
