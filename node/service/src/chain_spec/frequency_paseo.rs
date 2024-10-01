@@ -1,7 +1,7 @@
 #![allow(missing_docs)]
 use common_primitives::node::AccountId;
 use common_runtime::constants::{
-	currency::EXISTENTIAL_DEPOSIT, FREQUENCY_LOCAL_TOKEN, TOKEN_DECIMALS,
+	currency::EXISTENTIAL_DEPOSIT, FREQUENCY_TESTNET_TOKEN, TOKEN_DECIMALS,
 };
 use cumulus_primitives_core::ParaId;
 use frequency_runtime::{AuraId, CouncilConfig, Ss58Prefix, SudoConfig, TechnicalCommitteeConfig};
@@ -12,12 +12,11 @@ use sp_runtime::traits::AccountIdConversion;
 use super::{get_account_id_from_seed, get_collator_keys_from_seed, get_properties, Extensions};
 
 /// Specialized `ChainSpec` for the normal parachain runtime.
-pub type ChainSpec =
-	sc_service::GenericChainSpec<frequency_runtime::RuntimeGenesisConfig, Extensions>;
+pub type ChainSpec = sc_service::GenericChainSpec<Extensions>;
 use sp_core::sr25519;
 
 // Generic chain spec, in case when we don't have the native runtime.
-pub type RelayChainSpec = sc_service::GenericChainSpec<(), RelayChainExtensions>;
+pub type RelayChainSpec = sc_service::GenericChainSpec<RelayChainExtensions>;
 
 #[allow(clippy::unwrap_used)]
 /// Generates the Frequency Paseo chain spec from the raw json
@@ -55,7 +54,7 @@ fn template_session_keys(keys: AuraId) -> frequency_runtime::SessionKeys {
 pub fn local_paseo_testnet_config() -> ChainSpec {
 	// Give your base currency a unit name and decimal places
 	let properties =
-		get_properties(FREQUENCY_LOCAL_TOKEN, TOKEN_DECIMALS as u32, Ss58Prefix::get().into());
+		get_properties(FREQUENCY_TESTNET_TOKEN, TOKEN_DECIMALS as u32, Ss58Prefix::get().into());
 
 	ChainSpec::builder(
 		frequency_runtime::wasm_binary_unwrap(),

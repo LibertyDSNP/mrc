@@ -160,12 +160,13 @@ std = [
   "sp-runtime/std",
   "sp-session/std",
   "sp-std/std",
+  "cumulus-pallet-session-benchmarking/std",
   "sp-transaction-pool/std",
   "sp-genesis-builder/std",
   "common-runtime/std",
   "sp-version/std",
   "system-runtime-api/std",
-    "substrate-wasm-builder",
+  "substrate-wasm-builder",
   "frame-metadata-hash-extension/std",
 ]
 runtime-benchmarks = [

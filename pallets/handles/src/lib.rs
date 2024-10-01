@@ -38,7 +38,7 @@ use handles_utils::{
 	suffix::generate_unique_suffixes,
 	validator::{
 		consists_of_supported_unicode_character_sets, contains_blocked_characters,
-		is_reserved_handle,
+		is_reserved_canonical_handle,
 	},
 };
 
@@ -76,6 +76,8 @@ impl<T: Config> HandleProvider for Pallet<T> {
 
 #[frame_support::pallet]
 pub mod pallet {
+
+	use handles_utils::trim_and_collapse_whitespace;
 
 	use super::*;
 	#[pallet::config]
@@ -615,11 +617,7 @@ pub mod pallet {
 			let (canonical_handle_str, canonical_base) =
 				Self::get_canonical_string_vec_from_base_handle(&base_handle_str);
 
-			Self::validate_canonical_handle_contains_characters_in_supported_ranges(
-				&canonical_handle_str,
-			)?;
-
-			Self::validate_canonical_handle_length(&canonical_handle_str)?;
+			Self::validate_canonical_handle(&canonical_handle_str)?;
 
 			// Generate suffix from the next available index into the suffix sequence
 			let suffix_sequence_index =
@@ -650,7 +648,7 @@ pub mod pallet {
 			Ok(display_handle.into_inner())
 		}
 
-		/// Checks that handle base string is valid
+		/// Checks that handle base string is valid before canonicalization
 		fn validate_base_handle(base_handle: Vec<u8>) -> Result<String, DispatchError> {
 			// Convert base handle to UTF-8 string slice while validating.
 			let base_handle_str =
@@ -666,7 +664,6 @@ pub mod pallet {
 				Error::<T>::InvalidHandleCharacterLength
 			);
 
-			ensure!(!is_reserved_handle(&base_handle_str), Error::<T>::HandleIsNotAllowed);
 			ensure!(
 				!contains_blocked_characters(&base_handle_str),
 				Error::<T>::HandleContainsBlockedCharacters
@@ -674,25 +671,29 @@ pub mod pallet {
 			Ok(base_handle_str)
 		}
 
-		fn validate_canonical_handle_contains_characters_in_supported_ranges(
-			base_handle_str: &str,
-		) -> DispatchResult {
+		/// Validate that the canonical handle:
+		/// - contains characters ONLY in supported ranges
+		/// - Does NOT contain reserved words
+		/// - Is between (inclusive) `HANDLE_CHARS_MIN` and `HANDLE_CHARS_MAX`
+		fn validate_canonical_handle(canonical_base_handle_str: &str) -> DispatchResult {
 			// Validation: The handle must consist of characters not containing reserved words or blocked characters
 			ensure!(
-				consists_of_supported_unicode_character_sets(&base_handle_str),
+				consists_of_supported_unicode_character_sets(&canonical_base_handle_str),
 				Error::<T>::HandleDoesNotConsistOfSupportedCharacterSets
 			);
-			Ok(())
-		}
+			ensure!(
+				!is_reserved_canonical_handle(&canonical_base_handle_str),
+				Error::<T>::HandleIsNotAllowed
+			);
 
-		fn validate_canonical_handle_length(canonical_handle_str: &str) -> DispatchResult {
-			let len = canonical_handle_str.chars().count() as u32;
+			let len = canonical_base_handle_str.chars().count() as u32;
 
 			// Validation: `Canonical` character length must be within range
 			ensure!(
 				len >= HANDLE_CHARS_MIN && len <= HANDLE_CHARS_MAX,
 				Error::<T>::InvalidHandleCharacterLength
 			);
+
 			Ok(())
 		}
 
@@ -711,8 +712,9 @@ pub mod pallet {
 			base_handle: &str,
 			suffix: HandleSuffix,
 		) -> Result<DisplayHandle, DispatchError> {
+			let base_handle_trimmed = trim_and_collapse_whitespace(base_handle);
 			let mut full_handle_vec: Vec<u8> = vec![];
-			full_handle_vec.extend(base_handle.as_bytes());
+			full_handle_vec.extend(base_handle_trimmed.as_bytes());
 			full_handle_vec.push(HANDLE_DELIMITER as u8); // The delimiter
 			let mut buff = [0u8; SUFFIX_MAX_DIGITS];
 			full_handle_vec.extend(suffix.numtoa(10, &mut buff));
@@ -762,10 +764,7 @@ pub mod pallet {
 					let (canonical_handle_str, _) =
 						Self::get_canonical_string_vec_from_base_handle(&base_handle_str);
 
-					return Self::validate_canonical_handle_contains_characters_in_supported_ranges(
-						&canonical_handle_str,
-					)
-					.is_ok();
+					return Self::validate_canonical_handle(&canonical_handle_str).is_ok();
 				},
 				_ => false,
 			};
