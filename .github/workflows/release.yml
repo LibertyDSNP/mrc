@@ -720,6 +720,12 @@ jobs:
           pattern: artifacts-*-${{github.run_id}}
           path: /tmp
           merge-multiple: true
+      - name: Download api-augment artifacts
+        id: download-js
+        uses: actions/download-artifact@v4
+        with:
+          name: js-api-augment-${{github.run_id}}/js/api-augment/json
+          path: /tmp/polkadot-api-types-json
       - name: List Downloaded Artifacts
         working-directory: /tmp
         run: |
